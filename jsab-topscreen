@@ -1,0 +1,419 @@
+from math import *
+from kandinsky import *
+from ion import *
+from time import *
+from random import *
+
+seed(1)
+
+black=(20,20,20)
+grey=(150,150,150)
+white=(255,255,255)
+blue=(20,200,250)
+bluedark=(20,50,100)
+green=(50,250,20)
+greendark=(30,100,20)
+red=(250,10,50)
+reddark=(150,10,20)
+slate=(50,40,80)
+
+difficulty=1
+highscore=0
+scoreslist=[]
+bonuslist=["none","heal","slow","doub","invi","kill"]
+speedmod=1
+doubler=1
+
+def darkmode():
+  black=(20,20,20)
+  grey=(150,150,150)
+  white=(255,255,255)
+  blue=(20,200,250)
+  bluedark=(20,50,100)
+  green=(50,250,20)
+  greendark=(30,100,20)
+  red=(250,10,50)
+  reddark=(150,10,20)
+def lightmode():
+  black=(255,255,255)
+  grey=(150,150,150)
+  white=(20,20,20)
+  blue=(20,50,100)
+  bluedark=(20,200,250)
+  green=(30,100,20)
+  greendark=(50,250,20)
+  red=(150,10,20)
+  reddark=(250,10,50)
+
+
+class Player():
+  def __init__(self,x,y,hp,ori,col1,col2,up,down,left,right,dash):
+    self.x=x
+    self.y=y
+    self.hp=hp
+    self.ori=ori
+    self.col1=col1
+    self.col2=col2
+    self.up=up
+    self.down=down
+    self.left=left
+    self.right=right
+    self.dash=dash
+    self.dx=0
+    self.dy=0
+    self.cdwn=0
+    self.inv=0
+    self.bcool=1000
+    self.bonus="none"
+
+class Obstacle():
+  def __init__(self,x,y,w,h,state):
+    self.x=x
+    self.y=y
+    self.w=w
+    self.h=h
+    self.state=state
+
+class Laser():
+  def __init__(self,dir):
+    self.dir=dir
+    if dir==2:
+      self.x=-5
+      self.y=-5
+      self.w=5
+      self.h=444
+    if dir==3:
+      self.x=-5
+      self.y=-5
+      self.w=444
+      self.h=5
+    if dir==0:
+      self.x=320
+      self.y=-5
+      self.w=5
+      self.h=444
+    if dir==1:
+      self.x=-5
+      self.y=444
+      self.w=444
+      self.h=5
+    self.dx=0
+    self.dy=0
+
+class Collectible():
+  def __init__(self):
+    self.x=randint(10,305)
+    self.y=randint(-205,-10)
+    self.id=bonuslist[randint(1,len(bonuslist)-1)]
+
+def deathscreen(i,text):
+  y=randint(1,222)
+  condition=randint(1,100)
+
+  fill_rect(0,y,320,1,(i+randint(-i,i),i+randint(-i,i),i+randint(-i,i)))
+  fill_rect(0,y,320,3,(10,10,10))
+  fill_rect(randint(1,300),y,200,1,white)
+  fill_rect(0,y,320,1,(i+randint(-i,i),i+randint(-i,i),i+randint(-i,i)))
+  
+  tx=160-(len(text)*5)
+  if condition>94:
+    fill_rect(0,0,320,222,black)
+  elif condition==93:
+    draw_string(text,tx+5,95,red,black)
+  elif condition==92:
+    draw_string(text,tx-5,90,green,black)
+  elif condition==91:
+    draw_string(text,tx+1,97,blue,black)
+  else:
+    draw_string(text,tx,95,white,black)
+  draw_string("Press EXE to restart",tx,155,white,black)
+  draw_string("(highest : "+str(highscore)+")",tx,115,white,black)
+  avg=0
+  for n in scoreslist:
+    avg+=n
+  draw_string("(average : "+str(round(avg/len(scoreslist),3))+")",tx,135,white,black)
+
+
+def selection(multi,difficulty,light):
+  if light:
+    lightmode()
+  else:
+    darkmode()
+  fill_rect(0,0,320,222,black)
+  fill_rect(10,10,20,20,red)
+  fill_rect(290,10,20,20,red)
+  fill_rect(40,10,20,20,reddark)
+  fill_rect(260,10,20,20,reddark)
+  draw_string("JUST SQUARES & LASERS",50,50,white,black)
+  draw_string("HIGH SCORE : "+str(highscore),50,70,red,black)
+  
+  if multi==False:
+    fill_rect(50,120,5,5,blue)
+    fill_rect(205,125,5,5,bluedark)
+    fill_rect(215,115,5,5,greendark)
+    draw_string("1",100,120,white,black)
+    draw_string("2",250,120,grey,black)
+    draw_string("singleplayer",20,150,blue,bluedark)
+    draw_string("multiplayer",180,150,white,black)
+  if multi==True:
+    fill_rect(50,120,5,5,bluedark)
+    fill_rect(205,125,5,5,blue)
+    fill_rect(215,115,5,5,green)
+    draw_string("1",100,120,grey,black)
+    draw_string("2",250,120,white,black)
+    draw_string("singleplayer",20,150,white,black)
+    draw_string("multiplayer",180,150,green,greendark)
+  fill_rect(70,200,200,5,reddark)
+  draw_string("Difficulty : "+str(difficulty),70,180,white,black)
+  fill_rect(25+40*difficulty,197,10,10,red)  
+  sleep(0.2)
+
+def flash(color):
+  fill_rect(0,0,320,222,color)
+  sleep(0.04)
+  fill_rect(0,0,320,222,white)
+  sleep(0.04)
+  fill_rect(0,0,320,222,black)
+
+def frame(color):
+  fill_rect(0,0,3,222,color)
+  fill_rect(0,0,320,3,color)
+  fill_rect(317,0,3,222,color)
+  fill_rect(0,219,320,3,color)
+absolute=True
+lightmode()
+while absolute:
+  sleep(0.5)
+  players=[]
+  obs=[Obstacle(320,250,50,50,0)]
+  laz=[Laser(0)]
+  gamespeed=0.4
+  score=0
+  light=True
+  players.append(Player(100,-111,4,3,blue,bluedark,KEY_UP,KEY_DOWN,KEY_LEFT,KEY_RIGHT,KEY_OK))
+  
+  on=False
+  multiplay=False
+  fill_rect(0,0,320,222,black)
+  selection(multiplay,difficulty,light)
+  
+  while not on:
+    if keydown(KEY_EXE) and multiplay==False:
+      multiplay=True
+      selection(multiplay,difficulty,light)
+      
+    if keydown(KEY_EXE) and multiplay==True:
+      multiplay=False
+      selection(multiplay,difficulty,light)
+      
+    if keydown(KEY_RIGHT) and difficulty<6:
+      difficulty+=1
+      selection(multiplay,difficulty,light)
+      
+    if keydown(KEY_LEFT) and difficulty>1:
+      difficulty-=1
+      selection(multiplay,difficulty,light)
+    
+    if keydown(KEY_ANS) and light:
+      light=False
+      selection(multiplay,difficulty,light)
+    
+    if keydown(KEY_ANS) and not light:
+      light=True
+      selection(multiplay,difficulty,light)
+    
+      
+
+    if keydown(KEY_OK):
+      if multiplay==True:
+        players.append(Player(220,-111,4,0,green,greendark,KEY_EIGHT,KEY_TWO,KEY_FOUR,KEY_SIX,KEY_FIVE))
+  
+      on=True
+      pause=False
+      collectible=Collectible()
+
+  while on:
+    for p in players:
+      p.cdwn-=1
+      p.bcool-=1
+      if p.bcool<0:
+        p.bonus="none"
+        fill_rect(collectible.x,collectible.y+226,24,16,slate)
+        fill_rect(collectible.x+4,collectible.y+222,16,24,slate)
+        color=(100,100,100)
+        if collectible.id=="doub":
+          color=(250,250,20)
+        if collectible.id=="kill":
+          color=blue
+        if collectible.id=="slow":
+          color=white
+        if collectible.id=="heal":
+          color=(100,20,150)
+        if collectible.id=="invi":
+          color=(20,15,25)
+        fill_rect(collectible.x+6,collectible.y+228,12,12,color)
+      if p.bcool==0:
+        collectible=Collectible()
+      fill_rect(p.dx,p.dy,6,6,black)
+      if p.inv<0 or round((p.inv/100)*100)%2:
+        if p.hp>3:
+          fill_rect(p.x,p.y+225,3,3,p.col1)
+        if p.hp>2:
+          fill_rect(p.x+3,p.y+222,3,3,p.col1)
+        if p.hp>1:
+          fill_rect(p.x+3,p.y+225,3,3,p.col1)
+        if p.hp>0:
+          fill_rect(p.x,p.y+222,3,3,p.col1)
+      p.dx=p.x
+      p.dy=p.y
+      if keydown(p.left) and p.x>0:
+        p.x-=1
+        p.ori=0
+      if keydown(p.right) and p.x<315:
+        p.x+=1
+        p.ori=1
+      if keydown(p.up) and p.y>0:
+        p.y-=1
+        p.ori=2
+      if keydown(p.down) and p.y<217:
+        p.y+=1
+        p.ori=3
+      if (get_pixel(p.x-1,p.y-1)==(49, 40, 82) or get_pixel(p.x+7,p.y+7)==(49, 40, 82)) and p.bcool<0:
+        p.bcool=1000
+        fill_rect(collectible.x,collectible.y,24,24,black)
+        p.bonus=collectible.id
+        if p.bonus=="kill":
+          flash(p.col1)
+          score+=difficulty
+          obs=[Obstacle(320,250,50,50,0)]
+          laz=[Laser(0)]
+        if p.bonus=="slow":
+          speedmod=0.5
+        if p.bonus=="heal":
+          flash((100,20,150))
+          if p.hp<4:
+            p.hp+=1
+        if p.bonus=="invi":
+          p.inv=500
+        if p.bonus=="doub":
+          flash((250,250,20))
+          doubler=2
+      if p.bonus=="none":
+          speedmod=1
+          doubler=1
+          frame(black)
+      if p.bonus=="invi":
+        if p.inv>0:
+          if round(p.inv/10)%2==0:
+            frame(p.col1)
+          else:
+            frame(p.col2)
+        else:
+          frame(black)
+      if p.bonus=="doub":
+        if round(p.inv/10)%2==0:
+          frame((250,250,20))
+        else:
+          frame((150,100,20))
+      if p.bonus=="slow":
+        if round(p.bcool/50)%2==0:
+          frame(white)
+        else:
+          frame(grey)
+      if keydown(p.dash) and p.cdwn<1:
+        if p.ori==0:
+          p.x-=50
+        if p.ori==1:
+          p.x+=50
+        if p.ori==2:
+          p.y-=50
+        if p.ori==3:
+          p.y+=50
+        if p.x<0:
+          p.x=0
+        elif p.x>315:
+          p.x=315
+        if p.y<0:
+          p.y=0
+        elif p.y>217:
+          p.y=217
+        fill_rect(p.x-2,p.y+220,10,10,p.col2)
+        sleep(0.03)
+        fill_rect(0,0,320,222,black)
+        p.cdwn=30
+      p.inv-=1
+      if (get_pixel(p.x-1,p.y-1)==(255, 8, 49) or get_pixel(p.x+7,p.y+7)==(255, 8, 49)) and p.inv<1:
+        p.hp-=1
+        flash(red)
+        p.inv=100
+        if p.hp<1:
+          players.remove(p)
+          if players==[]:
+            on=False
+      
+      if keydown(KEY_EXE) and pause==False:
+        draw_string("GAME PAUSED",110,100)
+        pause=True
+        sleep(0.2)  
+      while pause:
+        if keydown(KEY_EXE):
+          fill_rect(110,100,120,20,black)
+          pause=False
+        sleep(0.2)
+        
+      for e in obs:
+        k=randint(1,300)
+        if (k==1 and len(obs)<difficulty+2) or len(obs)<=1:
+          x=randint(0,4)*60
+          y=randint(0,3)*60
+          obs.append(Obstacle(x,y,50,50,0))
+        e.state+=1
+        if e.state<200:
+          fill_rect(e.x,e.y,e.w,e.h,reddark)
+        elif e.state>500:
+          fill_rect(e.x,e.y,e.w,e.h,black)
+          obs.remove(e)
+        else:
+          fill_rect(e.x,e.y,e.w,e.h,red)
+          
+      for l in laz:
+        k=randint(1,200)
+        if (k==1 and len(laz)<difficulty) or len(laz)<=1:
+          r=randint(0,3)
+          laz.append(Laser(r))
+        speed=gamespeed*speedmod
+        if l.dir==0:
+          l.x+=speed
+          l.dx=speed
+          l.dy=0
+        if l.dir==1:
+          l.y+=speed
+          l.dx=0
+          l.dy=speed
+        if l.dir==2:
+          l.x-=speed
+          l.dx=-speed
+          l.dy=0
+        if l.dir==3:
+          l.y-=speed
+          l.dx=0
+          l.dy=-speed
+        if l.x<-10 or l.x>330 or l.y<-232 or l.y>232:
+          laz.remove(l)
+          gamespeed+=0.007
+          score+=doubler
+        fill_rect(int(l.x-l.dx),int(l.y-l.dy),l.w,l.h,black)
+        fill_rect(int(l.x),int(l.y),l.w,l.h,red)
+    if doubler==2:
+      draw_string(str(round(score)),10,10,(250,250,10),black)
+    else:
+      draw_string(str(round(score)),10,10,white,black)
+  highscore=max(highscore,score)
+  scoreslist.append(score)
+  while not on:
+    deathscreen(10,"GAME OVER, SCORE : "+str(score))
+    if keydown(KEY_EXE):
+      on=True
+
+#HIGHEST SCORE : 57
+#HIGHEST AVERAGE : 27.112
