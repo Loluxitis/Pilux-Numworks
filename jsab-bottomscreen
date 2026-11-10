@@ -4,8 +4,7 @@ from ion import *
 from time import *
 from random import *
 
-seed(1)
-
+mod=2
 black=(20,20,20)
 grey=(150,150,150)
 white=(255,255,255)
@@ -25,6 +24,7 @@ speedmod=1
 doubler=1
 
 def darkmode():
+  global black,grey,white,blue,bluedark,green,greendark,red,reddark,slate
   black=(20,20,20)
   grey=(150,150,150)
   white=(255,255,255)
@@ -34,17 +34,19 @@ def darkmode():
   greendark=(30,100,20)
   red=(250,10,50)
   reddark=(150,10,20)
+  slate=(50,40,80)
 def lightmode():
+  global black,grey,white,blue,bluedark,green,greendark,red,reddark,slate
   black=(255,255,255)
   grey=(150,150,150)
   white=(20,20,20)
-  blue=(20,50,100)
-  bluedark=(20,200,250)
-  green=(30,100,20)
-  greendark=(50,250,20)
-  red=(150,10,20)
-  reddark=(250,10,50)
-
+  blue=(120,150,200)
+  bluedark=(180,210,255)
+  green=(130,200,120)
+  greendark=(180,250,170)
+  red=(250,60,100)
+  reddark=(200,200,200)
+  slate=(220,210,250)
 
 class Player():
   def __init__(self,x,y,hp,ori,col1,col2,up,down,left,right,dash):
@@ -65,6 +67,8 @@ class Player():
     self.inv=0
     self.bcool=1000
     self.bonus="none"
+    self.power=0
+    self.charge="no"
 
 class Obstacle():
   def __init__(self,x,y,w,h,state):
@@ -144,28 +148,41 @@ def selection(multi,difficulty,light):
   fill_rect(290,10,20,20,red)
   fill_rect(40,10,20,20,reddark)
   fill_rect(260,10,20,20,reddark)
-  draw_string("JUST SQUARES & LASERS",50,50,white,black)
+  draw_string("JUST SQUARES & BEAMS",50,50,white,black)
   draw_string("HIGH SCORE : "+str(highscore),50,70,red,black)
   
   if multi==False:
-    fill_rect(50,120,5,5,blue)
-    fill_rect(205,125,5,5,bluedark)
-    fill_rect(215,115,5,5,greendark)
+    fill_rect(70,120,5,5,blue)
+    fill_rect(225,125,5,5,bluedark)
+    fill_rect(235,115,5,5,greendark)
     draw_string("1",100,120,white,black)
     draw_string("2",250,120,grey,black)
     draw_string("singleplayer",20,150,blue,bluedark)
     draw_string("multiplayer",180,150,white,black)
+    draw_string("EXE",20,132,reddark,black)
   if multi==True:
-    fill_rect(50,120,5,5,bluedark)
-    fill_rect(205,125,5,5,blue)
-    fill_rect(215,115,5,5,green)
+    fill_rect(70,120,5,5,bluedark)
+    fill_rect(225,125,5,5,blue)
+    fill_rect(235,115,5,5,green)
     draw_string("1",100,120,grey,black)
     draw_string("2",250,120,white,black)
     draw_string("singleplayer",20,150,white,black)
     draw_string("multiplayer",180,150,green,greendark)
-  fill_rect(70,200,200,5,reddark)
-  draw_string("Difficulty : "+str(difficulty),70,180,white,black)
-  fill_rect(25+40*difficulty,197,10,10,red)  
+    draw_string("EXE",180,132,reddark,black)
+  fill_rect(30,200,200,5,reddark)
+  draw_string("Difficulty : "+str(difficulty),30,180,(white[0]+((red[0]-128)/6)*difficulty,white[1]+((red[1]-128)/6)*difficulty,white[2]+((red[2]-128)/6)*difficulty),black)
+  fill_rect(20*difficulty,197,10,10,red)  
+  draw_string("ANS",250,195,reddark,black)
+  if light:
+    fill_rect(259,177,12,12,red)
+    fill_rect(261,179,8,8,black)
+    fill_rect(264,171,2,4,red)
+    fill_rect(264,191,2,4,red)
+    fill_rect(253,182,4,2,red)
+    fill_rect(273,182,4,2,red)
+  else:
+    fill_rect(256,174,16,16,grey)
+    fill_rect(259,175,12,12,black)
   sleep(0.2)
 
 def flash(color):
@@ -181,7 +198,7 @@ def frame(color):
   fill_rect(317,0,3,222,color)
   fill_rect(0,219,320,3,color)
 absolute=True
-lightmode()
+light=False
 while absolute:
   sleep(0.5)
   players=[]
@@ -189,9 +206,6 @@ while absolute:
   laz=[Laser(0)]
   gamespeed=0.4
   score=0
-  light=True
-  players.append(Player(100,111,4,3,blue,bluedark,KEY_UP,KEY_DOWN,KEY_LEFT,KEY_RIGHT,KEY_OK))
-  
   on=False
   multiplay=False
   fill_rect(0,0,320,222,black)
@@ -206,7 +220,7 @@ while absolute:
       multiplay=False
       selection(multiplay,difficulty,light)
       
-    if keydown(KEY_RIGHT) and difficulty<6:
+    if keydown(KEY_RIGHT) and difficulty<11:
       difficulty+=1
       selection(multiplay,difficulty,light)
       
@@ -226,7 +240,10 @@ while absolute:
 
     if keydown(KEY_OK):
       if multiplay==True:
-        players.append(Player(220,111,4,0,green,greendark,KEY_EIGHT,KEY_TWO,KEY_FOUR,KEY_SIX,KEY_FIVE))
+        players.append(Player(100,111,4,3,blue,bluedark,KEY_UP,KEY_DOWN,KEY_LEFT,KEY_RIGHT,KEY_ZERO))
+        players.append(Player(220,111,4,0,green,greendark,KEY_LEFTPARENTHESIS,KEY_PLUS,KEY_SIX,KEY_DIVISION,KEY_OK))
+      else:
+        players.append(Player(100,111,4,3,blue,bluedark,KEY_UP,KEY_DOWN,KEY_LEFT,KEY_RIGHT,KEY_OK))
   
       on=True
       pause=False
@@ -243,41 +260,60 @@ while absolute:
         color=(100,100,100)
         if collectible.id=="doub":
           color=(250,250,20)
+          draw_string("x2",collectible.x+4,collectible.y+2,color,slate)
         if collectible.id=="kill":
           color=blue
+          fill_rect(collectible.x+8,collectible.y+8,8,8,color)
+          fill_rect(collectible.x+8,collectible.y+10,6,4,slate)
         if collectible.id=="slow":
           color=white
+          fill_rect(collectible.x+6,collectible.y+6,12,12,color)
+          fill_rect(collectible.x+11,collectible.y+8,2,6,slate)
+          fill_rect(collectible.x+11,collectible.y+12,5,2,slate)
         if collectible.id=="heal":
-          color=(100,20,150)
+          color=green
+          fill_rect(collectible.x+10,collectible.y+6,4,12,color)
+          fill_rect(collectible.x+6,collectible.y+10,12,4,color)
         if collectible.id=="invi":
-          color=(20,15,25)
-        fill_rect(collectible.x+6,collectible.y+6,12,12,color)
+          color=(40,35,45)
+          fill_rect(collectible.x+10,collectible.y+6,8,2,color)
+          fill_rect(collectible.x+6,collectible.y+8,16,4,color)
+          fill_rect(collectible.x+7,collectible.y+12,14,2,color)
+          fill_rect(collectible.x+9,collectible.y+14,10,2,color)
+          fill_rect(collectible.x+11,collectible.y+16,4,2,color)
       if p.bcool==0:
         collectible=Collectible()
       fill_rect(p.dx,p.dy,6,6,black)
       if p.inv<0 or round((p.inv/100)*100)%2:
+        r=128+127*sin(p.x/10)
+        g=128+127*sin(p.x/10+(1*pi/2.8))
+        bl=128+127*sin(p.x/10+(2*pi/2.8))  
         if p.hp>3:
-          fill_rect(p.x,p.y+3,3,3,p.col1)
+          fill_rect(p.x,p.y+3,3,3,(r,g,bl))
         if p.hp>2:
-          fill_rect(p.x+3,p.y,3,3,p.col1)
+          fill_rect(p.x+3,p.y,3,3,(r,g,bl))
         if p.hp>1:
-          fill_rect(p.x+3,p.y+3,3,3,p.col1)
+          fill_rect(p.x+3,p.y+3,3,3,(r,g,bl))
         if p.hp>0:
-          fill_rect(p.x,p.y,3,3,p.col1)
+          fill_rect(p.x,p.y,3,3,(r,g,bl))
       p.dx=p.x
       p.dy=p.y
       if keydown(p.left) and p.x>0:
         p.x-=1
-        p.ori=0
+        if p.charge!="wip":
+          p.ori=0
       if keydown(p.right) and p.x<315:
         p.x+=1
-        p.ori=1
+        if p.charge!="wip":
+          p.ori=1
       if keydown(p.up) and p.y>0:
         p.y-=1
-        p.ori=2
+        if p.charge!="wip":
+          p.ori=2
       if keydown(p.down) and p.y<217:
         p.y+=1
-        p.ori=3
+        if p.charge!="wip":
+          p.ori=3
       if (get_pixel(p.x-1,p.y-1)==(49, 40, 82) or get_pixel(p.x+7,p.y+7)==(49, 40, 82)) and p.bcool<0:
         p.bcool=1000
         fill_rect(collectible.x,collectible.y,24,24,black)
@@ -304,10 +340,10 @@ while absolute:
           frame(black)
       if p.bonus=="invi":
         if p.inv>0:
-          if round(p.inv/10)%2==0:
-            frame(p.col1)
-          else:
-            frame(p.col2)
+          r=128+127*sin(p.inv/10)
+          g=128+127*sin(p.inv/10+(1*pi/2.8))
+          bl=128+127*sin(p.inv/10+(2*pi/2.8))
+          frame((r,g,bl))
         else:
           frame(black)
       if p.bonus=="doub":
@@ -320,15 +356,41 @@ while absolute:
           frame(white)
         else:
           frame(grey)
-      if keydown(p.dash) and p.cdwn<1:
+      if keydown(p.dash):
+        p.power=p.power+mod
+        mod=mod/1.01
         if p.ori==0:
-          p.x-=50
+          fill_rect(p.x-round(p.power-4),p.y-2,9,9,black)
+          fill_rect(p.x-round(p.power-2),p.y,5,5,p.col2)
+          fill_rect(p.x-round(p.power),p.y,5,5,p.col2)
         if p.ori==1:
-          p.x+=50
+          fill_rect(p.x+round(p.power-4),p.y-2,9,9,black)
+          fill_rect(p.x+round(p.power-2),p.y,5,5,p.col2)
+          fill_rect(p.x+round(p.power),p.y,5,5,p.col2)
         if p.ori==2:
-          p.y-=50
+          fill_rect(p.x-2,p.y-round(p.power-4),9,9,black)
+          fill_rect(p.x,p.y-round(p.power-2),5,5,p.col2)
+          fill_rect(p.x,p.y-round(p.power),5,5,p.col2)
         if p.ori==3:
-          p.y+=50
+          fill_rect(p.x-2,p.y+round(p.power-4),9,9,black)
+          fill_rect(p.x,p.y+round(p.power-2),5,5,p.col2)
+          fill_rect(p.x,p.y+round(p.power),5,5,p.col2)
+        if p.charge=="no":
+          p.charge="wip"
+      if not keydown(p.dash) and p.charge=="wip":
+        p.charge="done"
+      if p.cdwn<1 and p.charge=="done":
+        if p.ori==0:
+          p.x-=round(p.power)
+        if p.ori==1:
+          p.x+=round(p.power)
+        if p.ori==2:
+          p.y-=round(p.power)
+        if p.ori==3:
+          p.y+=round(p.power)
+        p.power=5
+        p.charge="no"
+        mod=2
         if p.x<0:
           p.x=0
         elif p.x>315:
@@ -366,7 +428,8 @@ while absolute:
         if (k==1 and len(obs)<difficulty+2) or len(obs)<=1:
           x=randint(0,4)*60
           y=randint(0,3)*60
-          obs.append(Obstacle(x,y,50,50,0))
+          if get_pixel(x+1,y+1) != (255, 8, 49):
+            obs.append(Obstacle(x,y,50,50,0))
         e.state+=1
         if e.state<200:
           fill_rect(e.x,e.y,e.w,e.h,reddark)
@@ -414,6 +477,3 @@ while absolute:
     deathscreen(10,"GAME OVER, SCORE : "+str(score))
     if keydown(KEY_EXE):
       on=True
-
-#HIGHEST SCORE : 57
-#HIGHEST AVERAGE : 27.112
